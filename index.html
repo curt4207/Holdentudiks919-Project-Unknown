@@ -1,12 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>To be titled</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    
-</body>
+    <style>
+      body {
+        background-image: url("/Dark-Unicorn-Fantasy-bingAi-madeforMe-RainbowRain.jpg");
+        height: 100vh;
+        /* width: 100vw; */
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        overflow: hidden;
+      }
+
+      canvas {
+        /* background: none; */
+        filter:  brightness(2);
+        
+      }
+    </style>
+  </head>
+  <body>
+    <div class="fireflies-container"></div>
+    <input type="text" id="colorInput" placeholder="Enter color or hex code">
+    <canvas id="canvas"></canvas>
+
+    <script>
+      let canvas = document.getElementById("canvas");
+      let ctx = canvas.getContext("2d");
+      let colorInput =document.getElementById("colorInput")
+
+      let MAX_FIREFLIES = 30;
+      let FLY_XSPEED_RANGE = [-1, 1];
+      let FLY_YSPEED_RANGE = [-0.5, 0.5];
+      let FLY_SIZE_RANGE = [0.5, 5.5];
+      let FLY_LIFESPAN_RANGE = [75, 150];
+
+      let flies = [];
+
+      function randomRange(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+
+   
+
+    function Fly(options) {
+  if (!options) {
+    options = {};
+  }
+
+  this.x = options.x || randomRange(0, canvas.width);
+  this.y = options.y || randomRange(0, canvas.height);
+
+  this.xSpeed =
+    options.xSpeed || randomRange(FLY_XSPEED_RANGE[0], FLY_XSPEED_RANGE[1]);
+  this.ySpeed =
+    options.ySpeed || randomRange(FLY_YSPEED_RANGE[0], FLY_YSPEED_RANGE[1]);
+
+  this.size =
+    options.size || randomRange(FLY_SIZE_RANGE[0], FLY_SIZE_RANGE[1]);
+  this.lifeSpan =
+    options.lifeSpan ||
+    randomRange(FLY_LIFESPAN_RANGE[0], FLY_LIFESPAN_RANGE[1]);
+
+  this.age = 0;
+  this.color = {
+    red: 207,
+    green: 255,
+    blue: 4,
+    alpha: 1,
+  };
+
+  this.updateColor = function (color) {
+    if (color.charAt(0) === "#") {
+      // If hex code is provided
+      let hex = color.substring(1);
+      this.color.red = parseInt(hex.substring(0, 2), 16);
+      this.color.green = parseInt(hex.substring(2, 4), 16);
+      this.color.blue = parseInt(hex.substring(4, 6), 16);
+    } else {
+      // If color name is provided
+      let tempElem = document.createElement("div");
+      tempElem.style.color = color;
+      document.body.appendChild(tempElem);
+      let rgbColor = window.getComputedStyle(tempElem).color;
+      document.body.removeChild(tempElem);
+      let rgbValues = rgbColor
+        .replace("rgb(", "")
+        .replace(")", "")
+        .split(",")
+        .map(Number);
+      this.color.red = rgbValues[0];
+      this.color.green = rgbValues[1];
+      this.color.blue = rgbValues[2];
+    }
+  };
+
+  // Set initial color based on input value
+  this.updateColor(colorInput.value || "#fb06de");
+}
+
+// ...
+
+// Update firefly color when input value changes
+colorInput.addEventListener("input", function () {
+  let color = colorInput.value;
+  flies.forEach(function (fly) {
+    fly.updateColor(color);
+  });
+});
+
+      function fitToScreen(params) {
+        params.width = window.innerWidth - 8;
+        params.height = window.innerHeight - 37;
+      }
+
+    //   function clearScreen() {
+    //     ctx.beginPath();
+    //     ctx.fillStyle = "rgb(0, 0, 0)";
+    //     ctx.rect(0, 0, canvas.width, canvas.height);
+    //     ctx.fill();
+    //   }
+
+      function createFlies() {
+        if (flies.length !== MAX_FIREFLIES) {
+          flies.push(new Fly());
+        }
+      }
+
+
+    function moveFlies() {
+  flies.forEach(function (fly) {
+    fly.x += fly.xSpeed;
+    fly.y += fly.ySpeed;
+    fly.age++;
+
+    if (fly.age < fly.lifeSpan / 2) {
+      fly.color.alpha += 1 / (fly.lifeSpan / 2);
+
+      if (fly.color.alpha > 1) {
+        fly.color.alpha = 1;
+      }
+    } else {
+      fly.color.alpha -= 1 / (fly.lifeSpan / 2);
+
+      if (fly.color.alpha < 0) {
+        fly.color.alpha = 0;
+      }
+    }
+
+    // Random flicker effect
+    if (Math.random() < 0.1) {
+      // Adjust the flicker intensity by changing the value 0.01
+      fly.color.alpha += Math.random() * 0.3 - 0.1;
+      fly.color.alpha = Math.max(0, Math.min(1, fly.color.alpha));
+    }
+  });
+}
+
+      function removeFlies() {
+        let i = flies.length;
+
+        while (i--) {
+          let fly = flies[i];
+
+          if (fly.age >= fly.lifeSpan) {
+            flies.splice(i, 1);
+          }
+        }
+      }
+
+    function drawFlies() {
+  flies.forEach(function (fly) {
+    ctx.beginPath();
+    ctx.shadowColor = `rgba(${fly.color.red *2}, ${fly.color.green *2}, ${fly.color.blue}, ${fly.color.alpha })`;
+    ctx.shadowBlur = 5;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = -1.5;
+    ctx.fillStyle = `rgba(${fly.color.red}, ${fly.color.green}, ${fly.color.blue}, ${fly.color.alpha})`;
+    ctx.arc(fly.x, fly.y, fly.size, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+      fitToScreen(canvas);
+
+      function render() {
+        fitToScreen(canvas)
+        // clearScreen();
+        drawFlies();
+        createFlies();
+        moveFlies();
+        removeFlies();
+      }
+
+      window.addEventListener("resize", function () {
+        fitToScreen(canvas);
+      });
+      
+      function animationLoop() {
+        window.requestAnimationFrame(animationLoop);
+        render();
+      }
+      
+      animationLoop();
+    </script>
+  </body>
 </html>
+
